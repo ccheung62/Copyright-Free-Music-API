@@ -31,20 +31,19 @@ namespace FinalProject.Controllers
 
         // GET: api/Musics/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Musics>> GetMusics(int id)
+        public async Task<ActionResult<Response>> GetMusics(int id)
         {
             var musics = await _context.Musics.Include(i => i.Artists).Include(i => i.Genres).Where(i => i.MusicsId == id)
              .FirstOrDefaultAsync();
 
-            //var response = new Response();
-            //response.statusCode = 400;
-
             if (musics == null)
             {
-                return NotFound();
-            }
-
-            return musics;
+                var response = new Response();
+                response.statusCode = 404;
+                response.statusDescription = "The specified id doesn't exist";
+                return response;
+            } 
+            return Ok(musics);
         }
 
         // PUT: api/Musics/5
@@ -81,28 +80,54 @@ namespace FinalProject.Controllers
         // POST: api/Musics
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Musics>> PostMusics(Musics musics)
+        public async Task<ActionResult<Response>> PostMusics(Musics musics)
         {
-            _context.Musics.Add(musics);
-            await _context.SaveChangesAsync();
+            var response = new Response();
+            response.statusCode = 200;
+
+            if (musics.Genres.Popularity < 0 || musics.Genres.Popularity > 10)
+            {
+                response.statusCode = 500;
+                response.statusDescription = "Genre popularity must be within 0-10";
+                return response;
+            }
+
+            try
+            {
+                _context.Musics.Add(musics);
+                await _context.SaveChangesAsync();
+            } catch (DbUpdateConcurrencyException)
+            {
+                response.statusCode = 500;
+                response.statusDescription = "The requested music track failed to upload into database";
+                return response;
+            }
 
             return CreatedAtAction("GetMusics", new { id = musics.MusicsId }, musics);
         }
 
         // DELETE: api/Musics/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteMusics(int id)
+        public async Task<Response> DeleteMusics(int id)
         {
             var musics = await _context.Musics.FindAsync(id);
+
+            var response = new Response();
+            response.statusCode = 200;
+
             if (musics == null)
             {
-                return NotFound();
+                response.statusCode = 404;
+                response.statusDescription = "The specified id doesn't exist";
+                return response;
             }
 
             _context.Musics.Remove(musics);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            response.statusDescription = "The specified music track had been successfully deleted";
+
+            return response;
         }
 
         private bool MusicsExists(int id)
