@@ -88,7 +88,7 @@ namespace FinalProject.Controllers
             if (musics.Genres.Popularity < 0 || musics.Genres.Popularity > 10)
             {
                 response.statusCode = 400;
-                response.statusDescription = "Genre popularity must be within 0-10";
+                response.statusDescription = "Genre popularity must be an integer within 0-10";
                 return BadRequest(response);
             }
 
