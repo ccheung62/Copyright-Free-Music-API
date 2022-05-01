@@ -41,7 +41,7 @@ namespace FinalProject.Controllers
                 var response = new Response();
                 response.statusCode = 404;
                 response.statusDescription = "The specified id doesn't exist";
-                return response;
+                return NotFound(response);
             } 
             return Ok(musics);
         }
@@ -87,9 +87,9 @@ namespace FinalProject.Controllers
 
             if (musics.Genres.Popularity < 0 || musics.Genres.Popularity > 10)
             {
-                response.statusCode = 500;
+                response.statusCode = 400;
                 response.statusDescription = "Genre popularity must be within 0-10";
-                return response;
+                return BadRequest(response);
             }
 
             try
@@ -108,7 +108,7 @@ namespace FinalProject.Controllers
 
         // DELETE: api/Musics/5
         [HttpDelete("{id}")]
-        public async Task<Response> DeleteMusics(int id)
+        public async Task<ActionResult<Response>> DeleteMusics(int id)
         {
             var musics = await _context.Musics.FindAsync(id);
 
@@ -119,7 +119,7 @@ namespace FinalProject.Controllers
             {
                 response.statusCode = 404;
                 response.statusDescription = "The specified id doesn't exist";
-                return response;
+                return NotFound(response);
             }
 
             _context.Musics.Remove(musics);
