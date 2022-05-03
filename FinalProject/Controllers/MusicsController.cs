@@ -23,27 +23,47 @@ namespace FinalProject.Controllers
 
         // GET: api/Musics
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Musics>>> GetMusics()
+        public async Task<ActionResult<Response>> GetMusics()
         {
-            return await _context.Musics.Include(i => i.Artists).Include(i => i.Genres)
+            var response = new Response();
+            response.statusCode = 200;
+            response.statusDescription = "Succesfully fetched all music tracks";
+
+            var listOfMusics = await _context.Musics.Include(i => i.Artists).Include(i => i.Genres)
              .ToListAsync();
+
+            response.Musics = listOfMusics;
+
+            if (listOfMusics.Count == 0)
+            {
+                response.statusCode = 404;
+                response.statusDescription = "No data for music available";
+            }
+
+            return response;
         }
 
         // GET: api/Musics/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Response>> GetMusics(int id)
         {
-            var musics = await _context.Musics.Include(i => i.Artists).Include(i => i.Genres).Where(i => i.MusicsId == id)
-             .FirstOrDefaultAsync();
+            var music = await _context.Musics.Include(i => i.Artists).Include(i => i.Genres).Where(i => i.MusicsId == id)
+             .ToListAsync();
 
-            if (musics == null)
+            var response = new Response();
+            response.statusCode = 200;
+
+            if (music.Count == 0)
             {
-                var response = new Response();
                 response.statusCode = 404;
                 response.statusDescription = "The specified id doesn't exist";
                 return NotFound(response);
-            } 
-            return Ok(musics);
+            }
+
+            response.Musics = music;
+            response.statusDescription = "Successfully fetched music track of specified id ";
+
+            return response;
         }
 
         // PUT: api/Musics/5
@@ -83,7 +103,7 @@ namespace FinalProject.Controllers
         public async Task<ActionResult<Response>> PostMusics(Musics musics)
         {
             var response = new Response();
-            response.statusCode = 200;
+            response.statusCode = 201;
 
             if (musics.Genres.Popularity < 0 || musics.Genres.Popularity > 10)
             {
@@ -96,14 +116,20 @@ namespace FinalProject.Controllers
             {
                 _context.Musics.Add(musics);
                 await _context.SaveChangesAsync();
-            } catch (DbUpdateConcurrencyException)
+            }
+            catch (DbUpdateConcurrencyException)
             {
                 response.statusCode = 500;
                 response.statusDescription = "The requested music track failed to upload into database";
                 return response;
             }
 
-            return CreatedAtAction("GetMusics", new { id = musics.MusicsId }, musics);
+            response.statusDescription = "Successfully created music track" + musics.MusicsId;
+
+            var newMusic = await _context.Musics.Include(i => i.Artists).Include(i => i.Genres).Where(i => i.MusicsId == musics.MusicsId).ToListAsync();
+            response.Musics = newMusic;
+
+            return Ok(response);
         }
 
         // DELETE: api/Musics/5
